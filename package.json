@@ -1,11 +1,11 @@
 {
   "name": "@thienhoan/express-plus",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "",
-  "main": "./dist/src/app.js",
+  "main": "./dist/src/users.js",
   "scripts": {
     "prepack": "tsc",
-    "build": "tsc & node ./dist/src/app.js"
+    "build": "tsc & node ./dist/src/users.js"
   },
   "keywords": [],
   "author": "Thien Vippro",
