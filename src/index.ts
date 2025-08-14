@@ -1,159 +1,141 @@
-import { createServer, IncomingMessage, ServerResponse } from "http";
-import { match as pathMatch, MatchFunction } from "path-to-regexp";
-import { MyRequest, MyResponse } from "./types";
-
-type HttpMethods = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
-
-type Handler = (req: MyRequest, res: MyResponse) => void | Promise<void>;
-
-class App {
-  private routes: Map<string, Handler[]>;
+export class MathUtils {
+  private routes: {
+    [method: string]: {
+      [path: string]: (...args: number[]) => number;
+    };
+  };
 
   constructor() {
-    this.routes = new Map();
-  }
-
-  private createMyServer() {
-    return createServer((req, res) => this.serverHandler(req, res));
-  }
-
-  private addRoute(method: HttpMethods, path: string, ...handlers: Handler[]) {
-    const key = `${path}/${method}`;
-    const existing = this.routes.get(key) || [];
-    this.routes.set(key, [...existing, ...handlers]);
-  }
-
-  private sanitizeUrl(url: string, method: string): string {
-    const urlParts = url.split("/");
-    const cleanedParts: string[] = [];
-
-    for (let i = 1; i < urlParts.length; i++) {
-      const part = urlParts[i].split("?")[0];
-      cleanedParts.push(part);
-    }
-
-    return `/${cleanedParts.join("/")}/${method.toUpperCase()}`;
-  }
-
-  private matchUrl(
-    sanitizedUrl: string
-  ): { pathKey: string; params: Record<string, string> } | null {
-    for (const path of Array.from(this.routes.keys())) {
-      const matcher: MatchFunction<object> = pathMatch(path, {
-        decode: decodeURIComponent,
-      });
-      const result = matcher(sanitizedUrl);
-      if (result) {
-        return {
-          pathKey: path,
-          params: result.params as Record<string, string>,
-        };
-      }
-    }
-    return null;
-  }
-
-  private async serverHandler(req: IncomingMessage, res: ServerResponse) {
-    const resCustom = res as MyResponse;
-    const reqCustom = req as MyRequest;
-
-    resCustom.send = (data: string) => {
-      if (!res.headersSent) {
-        res.setHeader("Content-Type", "text/plain");
-      }
-      res.write(data);
-      res.end();
+    // Initialize empty routes for each method
+    this.routes = {
+      'GET': {},
+      'POST': {},
+      'PUT': {},
+      'DELETE': {},
+      'PATCH': {}
     };
 
-    resCustom.json = (data: unknown) => {
-      if (!res.headersSent) {
-        res.setHeader("Content-Type", "application/json");
-      }
-      res.write(JSON.stringify(data));
-      res.end();
-    };
+    // Register default operations
+    this.registerOperations();
+  }
 
-    resCustom.status = (code: number) => {
-      res.statusCode = code;
-      return resCustom;
-    };
+  private registerOperations() {
+    // Register sum operations
+    this.get('/sum', this.sum.bind(this));
+    this.post('/sum', this.sum.bind(this));
+    this.put('/sum', this.sum.bind(this));
+    this.delete('/sum', this.sum.bind(this));
+    this.patch('/sum', this.sum.bind(this));
 
-    const sanitized = this.sanitizeUrl(
-      reqCustom.url || "",
-      reqCustom.method || ""
-    );
-    const matched = this.matchUrl(sanitized);
+    // Register subtraction operations
+    this.get('/sub', this.sub.bind(this));
+    this.post('/sub', this.sub.bind(this));
+    this.put('/sub', this.sub.bind(this));
+    this.delete('/sub', this.sub.bind(this));
+    this.patch('/sub', this.sub.bind(this));
 
-    const fullUrl = `http://localhost${reqCustom.url}`;
-    const parsedUrl = new URL(fullUrl);
-    const queryParams: Record<string, string> = {};
+    // Register multiplication operations
+    this.get('/mul', this.mul.bind(this));
+    this.post('/mul', this.mul.bind(this));
+    this.put('/mul', this.mul.bind(this));
+    this.delete('/mul', this.mul.bind(this));
+    this.patch('/mul', this.mul.bind(this));
 
-    parsedUrl.searchParams.forEach((value, key) => {
-      queryParams[key] = value;
-    });
+    // Register division operations
+    this.get('/div', this.div.bind(this));
+    this.post('/div', this.div.bind(this));
+    this.put('/div', this.div.bind(this));
+    this.delete('/div', this.div.bind(this));
+    this.patch('/div', this.div.bind(this));
 
-    reqCustom.query = queryParams;
-    reqCustom.params = {};
-    reqCustom.body = {};
+    // Register modulo operations
+    this.get('/mod', this.mod.bind(this));
+    this.post('/mod', this.mod.bind(this));
+    this.put('/mod', this.mod.bind(this));
+    this.delete('/mod', this.mod.bind(this));
+    this.patch('/mod', this.mod.bind(this));
+  }
 
-    if (matched) {
-      const handlers = this.routes.get(matched.pathKey) || [];
-      reqCustom.params = matched.params;
+  private sum(...numbers: number[]): number {
+    return numbers.reduce((acc, num) => acc + num, 0);
+  }
 
-      try {
-        if (req.method !== "GET") {
-          let body = "";
-          for await (const chunk of req) {
-            body += chunk;
-          }
-          if (body) {
-            reqCustom.body = JSON.parse(body);
-          }
-        }
-      } catch (error) {
-        console.error("Error parsing request body:", error);
-      }
+  private sub(first: number, ...rest: number[]): number {
+    return rest.length === 0 ? first : rest.reduce((acc, num) => acc - num, first);
+  }
 
-      for (const handler of handlers) {
-        await handler(reqCustom, resCustom);
-        if (resCustom.writableEnded) return;
-      }
+  private mul(first: number, ...rest: number[]): number {
+    return rest.length === 0 ? first : rest.reduce((acc, num) => acc * num, first);
+  }
 
-      if (!resCustom.writableEnded) {
-        resCustom.end();
-      }
-    } else {
-      resCustom.statusCode = 404;
-      resCustom.end("Not found");
+  private div(first: number, ...rest: number[]): number {
+    if (rest.some(num => num === 0)) {
+      throw new Error("Division by zero is not allowed");
     }
+    return rest.length === 0 ? first : rest.reduce((acc, num) => acc / num, first);
   }
 
-  run(port: number) {
-    const server = this.createMyServer();
-    server.listen(port, () => {
-      console.log(`Server is listening on port ${port}`);
-    });
+  private mod(first: number, ...rest: number[]): number {
+    return rest.length === 0 ? first : rest.reduce((acc, num) => acc % num, first);
   }
 
-  get(path: string, ...handlers: Handler[]) {
-    return this.addRoute("GET", path, ...handlers);
+  private addRoute(method: string, path: string, handler: (...args: number[]) => number): void {
+    this.routes[method][path] = handler;
   }
 
-  post(path: string, ...handlers: Handler[]) {
-    return this.addRoute("POST", path, ...handlers);
+  public get(path: string, handler: (...args: number[]) => number): void;
+  public get(path: string, ...args: number[]): number;
+  public get(path: string, ...args: any[]): any {
+    if (args.length === 1 && typeof args[0] === 'function') {
+      this.addRoute('GET', path, args[0]);
+      return;
+    }
+    return this.routes['GET'][path](...args);
   }
 
-  put(path: string, ...handlers: Handler[]) {
-    return this.addRoute("PUT", path, ...handlers);
+  public post(path: string, handler: (...args: number[]) => number): void;
+  public post(path: string, ...args: number[]): number;
+  public post(path: string, ...args: any[]): any {
+    if (args.length === 1 && typeof args[0] === 'function') {
+      this.addRoute('POST', path, args[0]);
+      return;
+    }
+    return this.routes['POST'][path](...args);
   }
 
-  patch(path: string, ...handlers: Handler[]) {
-    return this.addRoute("PATCH", path, ...handlers);
+  public put(path: string, handler: (...args: number[]) => number): void;
+  public put(path: string, ...args: number[]): number;
+  public put(path: string, ...args: any[]): any {
+    if (args.length === 1 && typeof args[0] === 'function') {
+      this.addRoute('PUT', path, args[0]);
+      return;
+    }
+    return this.routes['PUT'][path](...args);
   }
 
-  del(path: string, ...handlers: Handler[]) {
-    return this.addRoute("DELETE", path, ...handlers);
+  public delete(path: string, handler: (...args: number[]) => number): void;
+  public delete(path: string, ...args: number[]): number;
+  public delete(path: string, ...args: any[]): any {
+    if (args.length === 1 && typeof args[0] === 'function') {
+      this.addRoute('DELETE', path, args[0]);
+      return;
+    }
+    return this.routes['DELETE'][path](...args);
+  }
+
+  public patch(path: string, handler: (...args: number[]) => number): void;
+  public patch(path: string, ...args: number[]): number;
+  public patch(path: string, ...args: any[]): any {
+    if (args.length === 1 && typeof args[0] === 'function') {
+      this.addRoute('PATCH', path, args[0]);
+      return;
+    }
+    return this.routes['PATCH'][path](...args);
   }
 }
 
-export default App;
+// Create a singleton instance
+const mathUtils = new MathUtils();
+
+// Export both the class and singleton instance
+export default mathUtils;
