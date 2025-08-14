@@ -1,0 +1,30 @@
+{
+  "name": "@thienhoan/express-plus",
+  "version": "1.0.0",
+  "description": "",
+  "main": "./dist/src/app.js",
+  "scripts": {
+    "prepack": "tsc",
+    "build": "tsc & node ./dist/src/app.js"
+  },
+  "keywords": [],
+  "author": "Thien Vippro",
+  "license": "ISC",
+  "packageManager": "pnpm@10.13.1",
+  "dependencies": {
+    "jiti": "^2.5.1"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.15.5",
+    "drizzle-kit": "^0.31.4",
+    "drizzle-orm": "^0.44.4",
+    "express": "^5.1.0",
+    "http": "0.0.1-security",
+    "path-to-regexp": "^8.2.0",
+    "pg": "^8.16.3",
+    "pg-core": "^0.1.15",
+    "postgres": "^3.4.7",
+    "tsx": "^4.20.4",
+    "typescript": "^5.9.2"
+  }
+}
